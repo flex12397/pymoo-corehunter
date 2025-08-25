@@ -20,6 +20,13 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
+## 问题表述
+![建筑](./images/probdef.png)
+
+- 两个变量、目标、约束
+
+---
+
 ## 帕累托前沿
 
 
