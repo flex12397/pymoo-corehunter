@@ -1,4 +1,4 @@
-# Pymoo
+<img width="512" height="371" alt="image" src="https://github.com/user-attachments/assets/f8ca19e6-8cf2-4291-92cc-787ec1dc7c08" /># Pymoo
 
 ## Python 多目标优化
 
@@ -74,5 +74,29 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 1. 二进制/字符串变量：
   - 使用经典算子：单点、两点、均匀 (UX)、拌均匀 (HUX)
   - 原理：交换片段或随机从每个附带选择位
+
+---
+
+## Crossover（交叉）
 ![建筑](./images/binaries.png)
+
+---
+
+## Crossover（交叉）
+
+2. 实值变量：使用**模拟二进制交叉**（SBX）
+3. 整数变量：使用SBX的修改版本、通过舍入来适应离散值
+
+![建筑](./images/integerR.png)
+
+---
+
+## Mutation（变异）
+
+- 目的：随机修改一个接，引入新的遗传物质并保持种群多样性
+1. 实数和整数变量：**多项式编译**对值进行小的随机改变
+2. 二进制变量：**比特翻转变异**将一个位从0反转到1
+
+---
+
 
