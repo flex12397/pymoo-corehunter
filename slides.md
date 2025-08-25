@@ -1,5 +1,3 @@
-<img width="512" height="371" alt="image" src="https://github.com/user-attachments/assets/f8ca19e6-8cf2-4291-92cc-787ec1dc7c08" /># Pymoo
-
 ## Python 多目标优化
 
 <div class="presenter-footer">
