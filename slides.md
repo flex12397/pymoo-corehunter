@@ -22,6 +22,13 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ## 帕累托前沿（假设）
 
+![建筑](./images/sportscar.png)
+![建筑](./images/slowcar.png)
+
+---
+
+## 帕累托前沿（假设）
+
 - 两个目标：
   - 最大化速度
   - 最大化燃油效率
@@ -44,8 +51,6 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 ![建筑](./images/probdef.png)
 
 - 两个变量、目标、约束
-
-
 
 ---
 
