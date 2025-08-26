@@ -54,6 +54,30 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
+## 问题可视化
+![建筑](./images/figure1.png)
+
+---
+
+## pymoo 重构步骤
+
+1. 所有目标必须被最小化
+2. 所有约束必须是 "≤" 类型
+3. 建议进行约束归一化
+
+---
+
+![建筑](./images/editEq.png)
+
+$⍺=2⋅(−0.1)⋅(−0.9)=0.18$
+$β=20⋅(−0.4)⋅(−0.6)=4.8$
+
+---
+
+![建筑](./images/finalEq.png)
+
+---
+
 ## Pymoo建筑
 ![建筑](./images/Table1.png)
 
