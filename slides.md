@@ -97,13 +97,11 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ## 建筑主要模块
 
-1.	Problems（处理问题）
+1.	Problems（处理问题）\
   -	问题设计的启示，自动微分梯度和并行化计算
-
-3.	Optimization (优化)
+2.	Optimization (优化）\
   -	为算法提供了进化算子、处理约束的方法、分解策略以及终止准则
-
-3.	Analytics（分析）
+3.	Analytics（分析）\
   -	提供可视化、性能指标和决策支持工具
 
 ---
@@ -143,7 +141,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ## Crossover（交叉）
 
-- 目的：结合两个父代的遗传信息创新新的后代  
+- 目的：结合两个父代的遗传信息创新新的后代 \
 1. 二进制/字符串变量：
   - 使用经典算子：单点、两点、均匀 (UX)、拌均匀 (HUX)
   - 原理：交换片段或随机从每个附带选择位
@@ -188,7 +186,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
   - 加权和法（p=1）：简单，但无法处理有非凸帕累托前沿的问题
   - 切比雪夫（p=∞）和ASF/AASF：专注于最小化与理想点的最坏情况偏差
   - PBI：平衡了想帕累托前沿的收敛性和前沿的多样性
- - **重要**：对目标值进行适当的规范化
+- **重要**：对目标值进行适当的规范化
 
 ---
 
@@ -239,7 +237,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 1. 非支配排序
   - 将整个种群进行排序
-2. 拥挤度计算  
+2. 拥挤度计算
   - 在每个等级内，根据方案的“独特性”进行选择  
 3. 交叉
 
@@ -273,7 +271,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ## 3. SPEA2（强度帕累托进化算法 2）
 
-- 优点：其精英档案通常能产生一组非常高质量、多样化的解  
+- 优点：其精英档案通常能产生一组非常高质量、多样化的解  \
 1.	维护一个精英档案
   - SPEA2 维护两个组：一个主种群和一个精英档案
   - 精英档案：保存目前找到的最佳非支配解
@@ -281,12 +279,12 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 ---
 ## 3. SPEA2
 
-2.	强度和原始适应度
+2. 强度和原始适应度:
   - 为档案和种群中的每个解分配一个**强度值**
   - 该值基于它支配了多少其他解
   - 根据所有支配它的解的强度之和计算每个解的**原始适应度**
   - 高原始适应度 = 不好  
-3.	密度估计
+3. 密度估计
   - 添加一个密度度量（如拥挤度）
   - 选择具有最佳（最低）综合原始适应度和密度得分的个体
 
@@ -299,7 +297,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ## Performance indicator (性能指标）
 
-1. GD（世代距离）
+1. GD（世代距离）:
   - 衡量：收敛性（与最优值的距离）
   - 计算每个找到的解到真实前沿上最近点的平均距离
   - GD值低 = 收敛性好
@@ -307,12 +305,12 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 ---
 ## Performance indicator (性能指标）
 
-2. IGD+（反转世代距离）
+2. IGD+（反转世代距离）:
   - 衡量：收敛性与多样性（分布和覆盖度）
   - 计算真实前沿上每个点到最近找到解的平均距离
   - IGD值低 = 覆盖度和收敛性好
 
-3. Hypervolume（超体积）
+3. Hypervolume（超体积）:
   - 整体质量（支配空间的体积）
   - 计算被找到的解集所支配的客观空间的体积
   - 超体积大 = 解集既收敛良好又分布良好
