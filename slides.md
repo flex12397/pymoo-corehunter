@@ -97,11 +97,11 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ## 建筑主要模块
 
-1.	Problems（处理问题）\
+1. Problems（处理问题）
   -	问题设计的启示，自动微分梯度和并行化计算
-2.	Optimization (优化）\
+2. Optimization (优化）
   -	为算法提供了进化算子、处理约束的方法、分解策略以及终止准则
-3.	Analytics（分析）\
+3. Analytics（分析）
   -	提供可视化、性能指标和决策支持工具
 
 ---
@@ -272,7 +272,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 ## 3. SPEA2（强度帕累托进化算法 2）
 
 - 优点：其精英档案通常能产生一组非常高质量、多样化的解  \
-1.	维护一个精英档案
+1. 维护一个精英档案
   - SPEA2 维护两个组：一个主种群和一个精英档案
   - 精英档案：保存目前找到的最佳非支配解
 
