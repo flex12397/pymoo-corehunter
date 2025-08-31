@@ -63,7 +63,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 1. 所有目标必须被最小化
 2. 所有约束必须是 "≤" 类型
-3. 建议进行规范化
+3. 建议进行归一化
 
 ---
 
@@ -90,7 +90,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
-## Pymoo建筑
+## Pymoo架构
 ![建筑](./images/Table1.png)
 
 ---
@@ -133,7 +133,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
-## Sampling（采取）
+## Sampling（采样）
 
 - 目的：创建候选解的初始种群
 - 支持对实数、整数、和而今此变量的随机采样
@@ -145,7 +145,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 - 目的：结合两个父代的遗传信息创新新的后代
     1. 二进制/字符串变量：
-        - 使用经典算子：单点、两点、均匀 (UX)、拌均匀 (HUX)
+        - 使用经典算子：单点、两点、均匀 (UX)、半均匀 (HUX)
         - 原理：交换片段或随机从每个附带选择位
 
 ---
