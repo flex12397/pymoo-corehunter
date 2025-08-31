@@ -1,4 +1,4 @@
-<img width="468" height="634" alt="image" src="https://github.com/user-attachments/assets/5a583343-b7e9-4eaa-8a8a-5295c0b69f69" />## Python 多目标优化
+## Python 多目标优化
 
 <div class="presenter-footer">
 Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a>
