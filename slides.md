@@ -375,7 +375,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
-## 总结
+## 最适合优化 E-NE 和 A-NE的算法
 
 1. NSGA-II
     - 好处：稳健性强、分布性良好的解集、文档和社区支持非常完善
