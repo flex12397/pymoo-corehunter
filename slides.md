@@ -38,10 +38,6 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
-![建筑](./images/pareto.png)
-
----
-
 ## 帕累托前沿
 
 - 目的：
@@ -49,6 +45,11 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
   - 将它们均匀地分散在整个前沿上
 - 帕累托前沿就是所有这些“最优权衡”汽车的集合
 - pymoo 中多目标优化的整个目的就是找到帕累托前沿
+
+---
+
+![建筑](./images/pareto.png)
+
 ---
 
 ## 问题表述
