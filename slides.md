@@ -38,6 +38,10 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
+![建筑](./images/pareto.png)
+
+---
+
 ## 帕累托前沿
 
 - 目的：
