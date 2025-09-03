@@ -146,6 +146,10 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 
 ---
 
+![建筑](./images/lhs.png)
+
+---
+
 ## Crossover（交叉）
 
 - 目的：结合两个父代的遗传信息创新新的后代
@@ -156,7 +160,7 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 ---
 
 ## Crossover（交叉）
-![建筑](./images/binaries.png)
+![建筑](./images/crossover.png)
 
 ---
 
