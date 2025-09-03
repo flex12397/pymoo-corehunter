@@ -325,10 +325,23 @@ Felix Li • <a href="mailto:felix.li12397@gmail.com">felix.li12397@gmail.com</a
 ---
 
 ## Visualization（可视化）
-- 直观理解 -> 散点图 2D/3D
-- 多目标 -> 成对散点图
-- 超多目标 -> 平行坐标图 (PCP)、Radviz、星形坐标图
+
 - **强调**：对目标值进行归一化
+
+---
+
+- 直观理解 -> 散点图 2D/3D
+![建筑](./images/2D3D.png)
+
+---
+
+- 多目标 -> 成对散点图
+![建筑](./images/multi.png)
+
+---
+
+- 超多目标 -> 平行坐标图 (PCP)、Radviz、星形坐标图
+![建筑](./images/many.png)
 
 ---
 
