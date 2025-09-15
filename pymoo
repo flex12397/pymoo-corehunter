@@ -1,0 +1,448 @@
+import numpy as np
+import pandas as pd
+from pymoo.core.problem import Problem
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.operators.crossover.sbx import SBX
+from pymoo.operators.mutation.pm import PM
+from pymoo.operators.sampling.rnd import IntegerRandomSampling
+from pymoo.optimize import minimize
+from pymoo.visualization.scatter import Scatter
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics.pairwise import euclidean_distances
+import matplotlib.pyplot as plt
+import warnings
+import sys
+import datetime
+import time
+import os
+warnings.filterwarnings('ignore')
+
+class Logger:
+    def __init__(self, log_file):
+        self.log_file = log_file
+        self.console = sys.stdout
+        self.log = open(log_file, 'w', encoding='utf-8')
+        
+    def write(self, message):
+        self.console.write(message)
+        self.log.write(message)
+        self.log.flush()
+        
+    def flush(self):
+        self.console.flush()
+        self.log.flush()
+        
+    def close(self):
+        self.log.close()
+        
+    def __getstate__(self):
+        # For pickling - exclude the file handle
+        state = self.__dict__.copy()
+        state['log'] = None
+        return state
+        
+    def __setstate__(self, state):
+        # For unpickling - recreate the file handle
+        self.__dict__.update(state)
+        if self.log_file:
+            self.log = open(self.log_file, 'a', encoding='utf-8')
+        else:
+            self.log = None
+
+class CoreHunterProblem(Problem):
+    def __init__(self, genotype_data, phenotype_data, core_size, log_file):
+        """
+        Core Hunter优化问题
+        """
+        self.genotype_data = genotype_data
+        self.phenotype_data = phenotype_data
+        self.core_size = core_size
+        self.total_accessions = genotype_data.shape[0]
+        self.log_file = log_file  # Store log file path instead of logger object
+        
+        # 准备数据
+        self.combined_data = self._prepare_data()
+        
+        # 计算距离矩阵
+        self.distance_matrix = self._calculate_modified_rogers_distance()
+        
+        # 打印详细的调试信息
+        self._print_debug_info()
+        
+        super().__init__(
+            n_var=self.total_accessions,
+            n_obj=2,
+            n_constr=1,
+            xl=0,
+            xu=1,
+            vtype=bool
+        )
+    
+    def _print_debug_info(self):
+        """打印详细的调试信息"""
+        with open(self.log_file, 'a', encoding='utf-8') as f:
+            f.write(f"\n=== DEBUG INFORMATION ===\n")
+            f.write(f"Genotype data shape: {self.genotype_data.shape}\n")
+            f.write(f"Phenotype data shape: {self.phenotype_data.shape}\n")
+            f.write(f"Total accessions: {self.total_accessions}\n")
+            f.write(f"Core size: {self.core_size}\n")
+            
+            # 检查基因型数据
+            f.write(f"\nGenotype data stats:\n")
+            f.write(f"Min: {np.min(self.genotype_data):.3f}, Max: {np.max(self.genotype_data):.3f}\n")
+            f.write(f"Mean: {np.mean(self.genotype_data):.3f}, Std: {np.std(self.genotype_data):.3f}\n")
+            f.write(f"Unique values: {np.unique(self.genotype_data)}\n")
+            
+            # 检查距离矩阵
+            f.write(f"\nDistance matrix stats:\n")
+            f.write(f"Shape: {self.distance_matrix.shape}\n")
+            f.write(f"Min: {np.min(self.distance_matrix):.6f}, Max: {np.max(self.distance_matrix):.6f}\n")
+            f.write(f"Mean: {np.mean(self.distance_matrix):.6f}, Std: {np.std(self.distance_matrix):.6f}\n")
+            
+            # 检查距离矩阵变异性
+            if np.std(self.distance_matrix) < 1e-10:
+                f.write("⚠️ WARNING: Distance matrix has no variability!\n")
+                f.write("First 5x5 subset:\n")
+                np.savetxt(f, self.distance_matrix[:5, :5], fmt='%.6f')
+            else:
+                f.write("✓ Distance matrix has good variability\n")
+            
+            f.write("=======================\n\n")
+  
+    def _prepare_data(self):
+        """准备和标准化数据"""
+        # 确保数据是数值型
+        genotype_clean = np.nan_to_num(self.genotype_data.astype(float), nan=0.0)
+        phenotype_clean = np.nan_to_num(self.phenotype_data.astype(float), nan=0.0)
+        
+        # 标准化表型数据
+        if phenotype_clean.shape[1] > 0:
+            scaler = StandardScaler()
+            phenotype_scaled = scaler.fit_transform(phenotype_clean)
+        else:
+            phenotype_scaled = phenotype_clean
+        
+        return {
+            'genotype': genotype_clean,
+            'phenotype': phenotype_scaled
+        }
+  
+    def _calculate_modified_rogers_distance(self):
+        """计算Modified Rogers距离矩阵"""
+        n = self.total_accessions
+        dist_matrix = np.zeros((n, n))
+        genotype_data = self.combined_data['genotype']
+        
+        # 确保数据是数值型
+        if not np.issubdtype(genotype_data.dtype, np.number):
+            genotype_data = genotype_data.astype(float)
+        
+        # 计算Modified Rogers距离
+        for i in range(n):
+            for j in range(i + 1, n):
+                diff = genotype_data[i] - genotype_data[j]
+                # Modified Rogers距离公式: sqrt(Σ(p_i - p_j)² / (2m))
+                mr_dist = np.sqrt(np.sum(diff**2) / (2 * genotype_data.shape[1]))
+                dist_matrix[i, j] = mr_dist
+                dist_matrix[j, i] = mr_dist
+        
+        return dist_matrix
+  
+    def _evaluate(self, X, out, *args, **kwargs):
+        """评估目标函数"""
+        n_individuals = X.shape[0]
+        f1 = np.zeros(n_individuals)  # A-NE: 最小化
+        f2 = np.zeros(n_individuals)  # E-NE: 最大化
+        g = np.zeros(n_individuals)   # 约束
+        
+        for i in range(n_individuals):
+            selected_indices = np.where(X[i] == 1)[0]
+            n_selected = len(selected_indices)
+            
+            # 约束：核心集合大小必须准确（允许小误差）
+            g[i] = max(0, abs(n_selected - self.core_size) - 2)  # 允许±2的误差
+            
+            if n_selected < 2:  # 至少需要2个点才能计算距离
+                f1[i] = 10.0  # 惩罚值
+                f2[i] = 0.0
+                continue
+            
+            # 计算A-NE (最小化)
+            a_ne_distances = []
+            for j in range(self.total_accessions):
+                if j not in selected_indices and len(selected_indices) > 0:
+                    min_dist = np.min(self.distance_matrix[j, selected_indices])
+                    a_ne_distances.append(min_dist)
+            
+            f1[i] = np.mean(a_ne_distances) if a_ne_distances else 10.0
+            
+            # 计算E-NE (最大化)
+            if n_selected > 1:
+                core_submatrix = self.distance_matrix[np.ix_(selected_indices, selected_indices)]
+                np.fill_diagonal(core_submatrix, np.inf)
+                nearest_in_core = np.min(core_submatrix, axis=1)
+                f2[i] = np.mean(nearest_in_core)
+            else:
+                f2[i] = 0.0
+        
+        # 修正目标方向
+        out["F"] = np.column_stack([f1, -f2])  # A-NE最小化, E-NE最大化
+        out["G"] = g.reshape(-1, 1)
+
+def load_data(genotype_file, phenotype_file, logger):
+    """加载数据"""
+    try:
+        # 加载基因型数据
+        genotype_df = pd.read_csv(genotype_file)
+        logger.write(f"Genotype file columns: {genotype_df.columns.tolist()}\n")
+        accession_names = genotype_df.iloc[:, 0].values
+        
+        # 确保数据是数值型
+        genotype_data = genotype_df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce').fillna(0).values
+        
+        # 加载表型数据
+        phenotype_df = pd.read_csv(phenotype_file)
+        logger.write(f"Phenotype file columns: {phenotype_df.columns.tolist()}\n")
+        
+        # 确保材料顺序一致
+        phenotype_data = phenotype_df.set_index(phenotype_df.columns[0]).loc[accession_names]
+        phenotype_data = phenotype_data.apply(pd.to_numeric, errors='coerce').fillna(0).values
+        
+        return genotype_data, phenotype_data, accession_names
+        
+    except Exception as e:
+        logger.write(f"Error loading data: {e}\n")
+        raise
+
+def run_corehunter(genotype_file, phenotype_file, core_size_ratio=0.2, pop_size=100, n_gen=200, logger=None):
+    """运行优化"""
+    if logger is None:
+        logger = sys.stdout
+    
+    logger.write("Loading data...\n")
+    genotype_data, phenotype_data, accession_names = load_data(genotype_file, phenotype_file, logger)
+    total_accessions = genotype_data.shape[0]
+    core_size = int(total_accessions * core_size_ratio)
+    
+    logger.write(f"Total accessions: {total_accessions}\n")
+    logger.write(f"Core size: {core_size}\n")
+    logger.write(f"Genotype features: {genotype_data.shape[1]}\n")
+    logger.write(f"Phenotype features: {phenotype_data.shape[1]}\n")
+    
+    # 获取日志文件路径用于问题实例
+    log_file = logger.log_file if hasattr(logger, 'log_file') else "corehunter_log.txt"
+    
+    problem = CoreHunterProblem(genotype_data, phenotype_data, core_size, log_file)
+    
+    # 改进算法参数
+    algorithm = NSGA2(
+        pop_size=pop_size,
+        sampling=IntegerRandomSampling(),
+        crossover=SBX(prob=0.8, eta=20),
+        mutation=PM(prob=0.3, eta=20),
+        eliminate_duplicates=True
+    )
+    
+    logger.write("Running optimization...\n")
+    start_time = time.time()
+    
+    # 使用简单的minimize调用，避免复杂的display设置
+    res = minimize(
+        problem,
+        algorithm,
+        ('n_gen', n_gen),
+        seed=42,
+        verbose=False,  # 禁用pymoo的详细输出
+        save_history=False,
+    )
+    
+    end_time = time.time()
+    
+    logger.write(f"\nOptimization completed in {end_time - start_time:.2f} seconds!\n")
+    logger.write(f"Number of solutions: {len(res.X)}\n")
+    logger.write(f"Number of feasible solutions: {np.sum(res.G <= 0)}\n")
+    
+    # 手动输出优化进度信息
+    logger.write(f"\nOptimization progress:\n")
+    logger.write(f"Final best solution found with objectives: {res.F[0] if len(res.F) > 0 else 'N/A'}\n")
+    
+    return res, accession_names, core_size
+
+def analyze_results(res, accession_names, core_size, logger):
+    """分析结果"""
+    # 只考虑满足约束的解
+    feasible_mask = res.G.flatten() <= 0
+    if np.sum(feasible_mask) == 0:
+        logger.write("Warning: No feasible solutions found! Showing all solutions.\n")
+        feasible_mask = np.ones(len(res.X), dtype=bool)
+    
+    a_ne_values = res.F[feasible_mask, 0]  # A-NE (minimize)
+    e_ne_values = -res.F[feasible_mask, 1]  # E-NE (maximize)
+    
+    logger.write(f"\n=== RESULTS ANALYSIS ===\n")
+    logger.write(f"Feasible solutions: {len(a_ne_values)}\n")
+    logger.write(f"A-NE range: {np.min(a_ne_values):.6f} to {np.max(a_ne_values):.6f}\n")
+    logger.write(f"E-NE range: {np.min(e_ne_values):.6f} to {np.max(e_ne_values):.6f}\n")
+    
+    # 保存所有解的目标值到文件
+    save_all_solutions(res, accession_names, a_ne_values, e_ne_values, feasible_mask, logger)
+    
+    if len(a_ne_values) > 1 and np.std(a_ne_values) > 1e-10 and np.std(e_ne_values) > 1e-10:
+        # 绘制帕累托前沿
+        plot_pareto_front(a_ne_values, e_ne_values, logger)
+        
+        # 寻找膝点
+        from pymoo.decomposition.asf import ASF
+        normalized_f = np.column_stack([a_ne_values, -e_ne_values])
+        weights = np.array([0.5, 0.5])
+        asf = ASF()
+        i = asf.do(normalized_f, weights).argmin()
+        
+        best_solution = res.X[feasible_mask][i]
+        selected_indices = np.where(best_solution == 1)[0]
+        selected_accessions = accession_names[selected_indices]
+        
+        logger.write(f"\nBest compromise solution:\n")
+        logger.write(f"A-NE distance: {a_ne_values[i]:.6f}\n")
+        logger.write(f"E-NE distance: {e_ne_values[i]:.6f}\n")
+        logger.write(f"Selected {len(selected_accessions)} accessions:\n")
+        
+        for idx, acc in enumerate(selected_accessions):
+            logger.write(f"{idx+1}. {acc}\n")
+            
+        return selected_accessions, best_solution, a_ne_values[i], e_ne_values[i]
+    else:
+        logger.write("❌ Not enough variability in solutions for meaningful Pareto analysis\n")
+        logger.write("Possible causes:\n")
+        logger.write("1. Distance matrix has no variability\n")
+        logger.write("2. Genetic data is too homogeneous\n")
+        logger.write("3. Constraints are too strict\n")
+        return None, None, None, None
+
+def save_all_solutions(res, accession_names, a_ne_values, e_ne_values, feasible_mask, logger):
+    """保存所有解的目标值"""
+    try:
+        solutions_df = pd.DataFrame({
+            'Solution_ID': range(len(a_ne_values)),
+            'A_NE_Distance': a_ne_values,
+            'E_NE_Distance': e_ne_values,
+            'Feasible': feasible_mask[feasible_mask] if len(feasible_mask) == len(a_ne_values) else True
+        })
+        solutions_df.to_csv('all_solutions_objectives.csv', index=False)
+        logger.write("Saved all solution objectives to 'all_solutions_objectives.csv'\n")
+    except Exception as e:
+        logger.write(f"Error saving solutions: {e}\n")
+
+def plot_pareto_front(a_ne_values, e_ne_values, logger):
+    """绘制帕累托前沿图并保存"""
+    try:
+        plt.figure(figsize=(12, 8))
+        plt.scatter(a_ne_values, e_ne_values, c='blue', alpha=0.7, s=50)
+        plt.xlabel('Average Accession-to-Nearest-Entry Distance (minimize)')
+        plt.ylabel('Average Entry-to-Nearest-Entry Distance (maximize)')
+        plt.title('Pareto Front: Core Hunter Optimization')
+        plt.grid(True, alpha=0.3)
+        
+        # 添加统计信息
+        stats_text = f'A-NE: {np.min(a_ne_values):.3f}-{np.max(a_ne_values):.3f}\nE-NE: {np.min(e_ne_values):.3f}-{np.max(e_ne_values):.3f}'
+        plt.annotate(stats_text, xy=(0.05, 0.95), xycoords='axes fraction', 
+                    bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8))
+        
+        plt.tight_layout()
+        plt.savefig('pareto_front.png', dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.write("Saved Pareto front to 'pareto_front.png'\n")
+    except Exception as e:
+        logger.write(f"Error creating Pareto plot: {e}\n")
+
+def save_final_results(selected_accessions, a_ne_value, e_ne_value, output_file, logger):
+    """保存最终结果"""
+    if selected_accessions is not None:
+        try:
+            # 保存选中的材料
+            selection_df = pd.DataFrame({
+                'Accession_ID': selected_accessions,
+                'Selected': True
+            })
+            selection_df.to_csv(output_file, index=False)
+            
+            # 保存性能指标
+            performance_df = pd.DataFrame({
+                'Metric': ['A_NE_Distance', 'E_NE_Distance'],
+                'Value': [a_ne_value, e_ne_value],
+                'Optimization_Direction': ['Minimize', 'Maximize']
+            })
+            performance_df.to_csv('core_performance_metrics.csv', index=False)
+            
+            logger.write(f"✓ Core collection saved to: {output_file}\n")
+            logger.write(f"✓ Performance metrics saved to: core_performance_metrics.csv\n")
+            return True
+        except Exception as e:
+            logger.write(f"Error saving results: {e}\n")
+            return False
+    else:
+        logger.write("✗ No results to save - optimization failed\n")
+        return False
+
+if __name__ == "__main__":
+    # 设置输出文件
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = f"corehunter_log_{timestamp}.txt"
+    output_file = f"core_collection_{timestamp}.csv"
+    
+    # 设置日志记录
+    logger = Logger(log_file)
+    
+    try:
+        logger.write(f"Core Hunter Optimization started at {datetime.datetime.now()}\n")
+        logger.write("=" * 60 + "\n")
+        
+        genotype_file = "geno.csv"
+        phenotype_file = "pheno.csv"
+        
+        logger.write(f"Input files:\n")
+        logger.write(f"Genotype: {genotype_file}\n")
+        logger.write(f"Phenotype: {phenotype_file}\n")
+        logger.write("=" * 60 + "\n")
+        
+        # 保存原始stdout并重定向
+        original_stdout = sys.stdout
+        sys.stdout = logger
+        
+        res, accession_names, core_size = run_corehunter(
+            genotype_file=genotype_file,
+            phenotype_file=phenotype_file,
+            core_size_ratio=0.2,
+            pop_size=100,
+            n_gen=200,
+            logger=logger
+        )
+        
+        selected_accessions, best_solution, a_ne_value, e_ne_value = analyze_results(
+            res, accession_names, core_size, logger
+        )
+        
+        logger.write("=" * 60 + "\n")
+        logger.write("SAVING RESULTS...\n")
+        
+        success = save_final_results(selected_accessions, a_ne_value, e_ne_value, output_file, logger)
+        if success:
+            logger.write(f"✓ All solutions saved to: all_solutions_objectives.csv\n")
+            logger.write(f"✓ Pareto front plot saved to: pareto_front.png\n")
+        
+        logger.write("=" * 60 + "\n")
+        logger.write(f"Core Hunter Optimization completed at {datetime.datetime.now()}\n")
+        logger.write(f"Complete log saved to: {log_file}\n")
+        
+    except Exception as e:
+        logger.write(f"❌ ERROR: {e}\n")
+        import traceback
+        traceback.print_exc(file=logger.log)
+        
+    finally:
+        # 恢复标准输出并关闭日志文件
+        sys.stdout = original_stdout
+        logger.close()
+        print(f"Log file saved: {log_file}")
+        if 'output_file' in locals():
+            print(f"Results saved: {output_file}")
